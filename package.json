@@ -1,4 +1,19 @@
 {
   "name": "project-2",
-  "packageManager": "yarn@4.14.1"
+  "private": true,
+  "packageManager": "yarn@4.1.1",
+  "scripts": {
+    "prisma": "prisma",
+    "validate": "prisma validate --schema api/prisma/schema.prisma",
+    "generate": "prisma generate --schema api/prisma/schema.prisma",
+    "db:push": "prisma db push --schema api/prisma/schema.prisma",
+    "studio": "prisma studio --schema api/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  }
 }

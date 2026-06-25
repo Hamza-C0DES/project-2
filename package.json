@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "yarn@4.1.1",
   "scripts": {
+    "dev": "node api/src/index.js",
     "prisma": "prisma",
     "validate": "prisma validate --schema api/prisma/schema.prisma",
     "generate": "prisma generate --schema api/prisma/schema.prisma",

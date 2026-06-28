@@ -9,6 +9,7 @@ datasource db {
 
 model Game {
   id        Int      @id @default(autoincrement())
+  roomCode  String   @unique 
   letter    String
   topic     String
   active    Boolean  @default(true)

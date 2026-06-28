@@ -21,6 +21,7 @@ model Answer {
   id        Int      @id @default(autoincrement())
   username  String
   answer    String
+  score     Int      @default(0)
   gameId    Int
   game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

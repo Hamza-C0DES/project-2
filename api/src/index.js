@@ -1,6 +1,13 @@
 const express = require("express");
 const prisma = require("./prisma");
 const { pickRandomLetter, pickRandomTopic } = require("./gameData");
+const {
+  answerValidator,
+  normalizeAnswer,
+  gameIsOver,
+  getScore,
+  getWinner,
+} = require("./answerValidator");
 
 const app = express();
 const port = 3000;
@@ -26,7 +33,17 @@ app.post("/games", async (req, res) => {
         topic: pickRandomTopic(),
       },
     });
-    res.status(201).json(game);
+    res.status(201).json({
+      id: game.id,
+      roomCode: game.roomCode,
+      letter: game.letter,
+      topic: game.topic,
+      active: game.active,
+      createdAt: game.createdAt.toLocaleString("en-US", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }),
+    });
   } catch (error) {
     console.error(error);
     // In prisma P2002 = "Unique constraint failed on the {constraint}"
@@ -46,9 +63,37 @@ app.get("/games", async (req, res) => {
         letter: true,
         topic: true,
         active: true,
+        createdAt: true,
+        answers: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            username: true,
+            answer: true,
+            score: true,
+          },
+        },
       },
     });
-    res.json(games);
+
+    const gamesWithWinners = games.map((game) => {
+      let winner = null;
+
+      if (gameIsOver(game.createdAt)) {
+        winner = getWinner(game.answers);
+      }
+
+      return {
+        roomCode: game.roomCode,
+        letter: game.letter,
+        topic: game.topic,
+        active: game.active,
+        winner: winner,
+      };
+    });
+
+    res.json(gamesWithWinners);
   } catch (error) {
     console.error(error);
 
@@ -64,30 +109,54 @@ app.post("/answers", async (req, res) => {
       .json({ error: "Room code, username, and answer are required" });
   }
 
+  const cleanAnswer = normalizeAnswer(answer);
+
+  if (!cleanAnswer) {
+    return res.status(400).json({ error: "Answer is required" });
+  }
+
   try {
     const game = await prisma.game.findUnique({
       where: {
         roomCode: roomCode,
+      },
+      include: {
+        answers: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
       },
     });
 
     if (!game) {
       return res.status(404).json({ error: "Game not found" });
     }
-    if (!answer.toUpperCase().startsWith(game.letter)) {
+
+    if (gameIsOver(game.createdAt)) {
+      return res.status(400).json({
+        error: "Game is over",
+        winner: getWinner(game.answers),
+      });
+    }
+
+    if (!answerValidator(cleanAnswer, game.letter)) {
       return res
         .status(400)
         .json({ error: `Answer must start with ${game.letter}` });
     }
 
+    const score = getScore(cleanAnswer);
+
     await prisma.answer.create({
       data: {
         username: username,
-        answer: answer,
+        answer: cleanAnswer,
+        score: score,
         gameId: game.id,
       },
     });
-    res.json({ accepted: true });
+    res.json({ accepted: true, score: score });
   } catch (error) {
     console.error(error);
 

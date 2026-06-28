@@ -1,36 +1,88 @@
-# Scattergories
+# Scattergories API
 
-Express + Prisma + PostgreSQL API for the Scattergories group project.
+Express + Prisma + PostgreSQL API for Scattergories.
 
-## Project Structure
+## Install
 
-```text
-project-2/
-├── api/        # Express + Prisma server
-├── client/     # Optional React client
-├── data/       # pgAdmin database dump files
-└── README.md
+```bash
+yarn install
 ```
 
-## Required API Routes
+Create a `.env` file in the project root:
+
+```bash
+cp .env.example .env
+```
+
+Update `DATABASE_URL` in `.env`:
 
 ```text
+DATABASE_URL="postgresql://username:password@localhost:5432/scattergories?schema=public"
+```
+
+Push the Prisma schema to the database:
+
+```bash
+yarn db:push
+```
+
+## Usage
+
+Start the API:
+
+```bash
+yarn dev
+```
+
+The server runs at:
+
+```text
+http://localhost:3000
+```
+
+Routes:
+
+```text
+GET /
 POST /games
 GET /games
 POST /answers
 ```
 
-## Setup Notes
+Create a game:
 
-1. Create a PostgreSQL database.
-2. Add your database URL to `api/.env`.
-3. Run the API from the `api` folder.
-4. Use ngrok to expose the API when classmates need to play:
+```json
+POST /games
+{
+  "roomCode": "PLUM42"
+}
+```
+
+Submit an answer:
+
+```json
+POST /answers
+{
+  "roomCode": "PLUM42",
+  "username": "sam",
+  "answer": "Bear"
+}
+```
+
+Expose the API with ngrok:
 
 ```bash
 ngrok http 3000
 ```
 
-## AI Use
+Database dumps go in:
 
-GPT was used for planning, guidance, and debugging issues along with code snippets.
+```text
+data/
+```
+
+Use pgAdmin Backup/Restore to export or import the database dump.
+
+## AI Disclosure
+
+Our team used AI as a coding partner while building this project. We used it for planning, debugging, and explanations before implementing code so we could understand what each route, Prisma query, and validation check was doing before writing it out.

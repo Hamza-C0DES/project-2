@@ -3,6 +3,7 @@ const prisma = require("./prisma");
 const { pickRandomLetter, pickRandomTopic } = require("./gameData");
 const {
   answerValidator,
+  normalizeAnswer,
   gameIsOver,
   getScore,
   getWinner,
@@ -53,6 +54,50 @@ app.post("/games", async (req, res) => {
     res.status(500).json({ error: "Could not create game" });
   }
 });
+
+
+app.get("/leaderboard", async(req,res)=>{
+  try{
+    const games = await prisma.game.findMany({
+      where:{
+        active: false
+      },
+      orderBy:{
+        createdAt: 'asc'
+      },
+      take:10
+    })
+  }
+  catch{
+
+  }
+})
+
+
+//make a route to retrieve a leader board from the db
+app.get("/leaderboard/:n", async(req,res) =>{
+  const {number} = req.body;
+  if(isNaN(number) || number <=0){
+    return json({error:"Invalid count parameter, must be a number greater than 0"})
+  }
+  try{
+    //get last few games, maybe 5 or so
+    //get the name of the players
+    const games = await prisma.game.findMany({
+      where:{
+        active:false
+      },
+      orderBy:{
+        createdAt: 'asc'
+      },
+      take: number
+    })
+    res.json(games)
+  }
+  catch(error){
+    console.error(error);
+  }
+})
 
 app.get("/games", async (req, res) => {
   try {
@@ -108,6 +153,12 @@ app.post("/answers", async (req, res) => {
       .json({ error: "Room code, username, and answer are required" });
   }
 
+  const cleanAnswer = normalizeAnswer(answer);
+
+  if (!cleanAnswer) {
+    return res.status(400).json({ error: "Answer is required" });
+  }
+
   try {
     const game = await prisma.game.findUnique({
       where: {
@@ -126,13 +177,6 @@ app.post("/answers", async (req, res) => {
       return res.status(404).json({ error: "Game not found" });
     }
 
-    const answerCheck = answerValidator(answer, game.letter);
-    const cleanAnswer = answerCheck.cleanAnswer;
-
-    if (!cleanAnswer) {
-      return res.status(400).json({ error: "Answer is required" });
-    }
-
     if (gameIsOver(game.createdAt)) {
       return res.status(400).json({
         error: "Game is over",
@@ -140,7 +184,7 @@ app.post("/answers", async (req, res) => {
       });
     }
 
-    if (!answerCheck.isValid) {
+    if (!answerValidator(cleanAnswer, game.letter)) {
       return res
         .status(400)
         .json({ error: `Answer must start with ${game.letter}` });

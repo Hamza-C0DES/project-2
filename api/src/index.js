@@ -3,7 +3,6 @@ const prisma = require("./prisma");
 const { pickRandomLetter, pickRandomTopic } = require("./gameData");
 const {
   answerValidator,
-  normalizeAnswer,
   gameIsOver,
   getScore,
   getWinner,
@@ -109,12 +108,6 @@ app.post("/answers", async (req, res) => {
       .json({ error: "Room code, username, and answer are required" });
   }
 
-  const cleanAnswer = normalizeAnswer(answer);
-
-  if (!cleanAnswer) {
-    return res.status(400).json({ error: "Answer is required" });
-  }
-
   try {
     const game = await prisma.game.findUnique({
       where: {
@@ -133,6 +126,13 @@ app.post("/answers", async (req, res) => {
       return res.status(404).json({ error: "Game not found" });
     }
 
+    const answerCheck = answerValidator(answer, game.letter);
+    const cleanAnswer = answerCheck.cleanAnswer;
+
+    if (!cleanAnswer) {
+      return res.status(400).json({ error: "Answer is required" });
+    }
+
     if (gameIsOver(game.createdAt)) {
       return res.status(400).json({
         error: "Game is over",
@@ -140,7 +140,7 @@ app.post("/answers", async (req, res) => {
       });
     }
 
-    if (!answerValidator(cleanAnswer, game.letter)) {
+    if (!answerCheck.isValid) {
       return res
         .status(400)
         .json({ error: `Answer must start with ${game.letter}` });

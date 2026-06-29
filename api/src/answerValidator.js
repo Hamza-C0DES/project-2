@@ -1,31 +1,34 @@
-function answerValidator(userInput, requiredFirstLetter) {
-  if (userInput.toUpperCase().startsWith(requiredFirstLetter)) {
-    return true;
-  } else {
-    return false;
-  }
-}
+function answerValidator(answer, requiredFirstLetter) {
+  const cleanAnswer = answer.trim().toLowerCase();
 
-function normalizeAnswer(answer) {
-  return answer.trim().toLowerCase();
+  if (cleanAnswer.toUpperCase().startsWith(requiredFirstLetter)) {
+    return {
+      isValid: true,
+      cleanAnswer: cleanAnswer,
+    };
+  } else {
+    return {
+      isValid: false,
+      cleanAnswer: cleanAnswer,
+    };
+  }
 }
 
 function gameIsOver(createdAt) {
   const now = new Date();
-  const fiveMinutes = 300000;
+  const fiveMinutes = 5 * 60 * 1000;
   const gameAge = now - createdAt;
 
   if (gameAge > fiveMinutes) {
-    console.log("true");
     return true;
   } else {
-    console.log("false");
     return false;
   }
 }
 
-function getScore() {
-  return 1;
+function getScore(answer) {
+  const score = answer.replaceAll(" ", "");
+  return Math.max(1, Math.floor(score.length / 2));
 }
 
 function getWinner(answers) {
@@ -55,7 +58,6 @@ function getWinner(answers) {
 
 module.exports = {
   answerValidator,
-  normalizeAnswer,
   gameIsOver,
   getScore,
   getWinner,

@@ -12,12 +12,14 @@ function normalizeAnswer(answer) {
 
 function gameIsOver(createdAt) {
   const now = new Date();
-  const fiveMinutes = 5 * 60 * 1000;
+  const fiveMinutes = 300000;
   const gameAge = now - createdAt;
 
   if (gameAge > fiveMinutes) {
+    console.log("true");
     return true;
   } else {
+    console.log("false");
     return false;
   }
 }

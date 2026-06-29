@@ -22,3 +22,6 @@ yarn-error.log*
 # OS/editor files
 .DS_Store
 .vscode/
+
+# Test Folder
+test/

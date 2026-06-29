@@ -15,6 +15,7 @@ model Game {
   active    Boolean  @default(true)
   answers   Answer[]
   createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Answer {

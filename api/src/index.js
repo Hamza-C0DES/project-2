@@ -3,7 +3,6 @@ const prisma = require("./prisma");
 const { pickRandomLetter, pickRandomTopic } = require("./gameData");
 const {
   answerValidator,
-  normalizeAnswer,
   gameIsOver,
   getScore,
   getWinner,
@@ -55,49 +54,85 @@ app.post("/games", async (req, res) => {
   }
 });
 
-
-app.get("/leaderboard", async(req,res)=>{
-  try{
+app.get("/leaderboard", async (req, res) => {
+  try {
     const games = await prisma.game.findMany({
-      where:{
-        active: false
+      orderBy: {
+        createdAt: "asc",
       },
-      orderBy:{
-        createdAt: 'asc'
+      include: {
+        answers: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
       },
-      take:10
-    })
-  }
-  catch{
+    });
 
-  }
-})
+    const leaderboard = [];
 
+    for (const game of games) {
+      if (gameIsOver(game.createdAt)) {
+        leaderboard.push({
+          roomCode: game.roomCode,
+          letter: game.letter,
+          topic: game.topic,
+          winner: getWinner(game.answers),
+        });
+      }
+    }
 
-//make a route to retrieve a leader board from the db
-app.get("/leaderboard/:n", async(req,res) =>{
-  const {number} = req.body;
-  if(isNaN(number) || number <=0){
-    return json({error:"Invalid count parameter, must be a number greater than 0"})
-  }
-  try{
-    //get last few games, maybe 5 or so
-    //get the name of the players
-    const games = await prisma.game.findMany({
-      where:{
-        active:false
-      },
-      orderBy:{
-        createdAt: 'asc'
-      },
-      take: number
-    })
-    res.json(games)
-  }
-  catch(error){
+    res.json(leaderboard.slice(0, 10));
+  } catch (error) {
     console.error(error);
+
+    res.status(500).json({ error: "Could not get leaderboard" });
   }
-})
+});
+
+app.get("/leaderboard/:count", async (req, res) => {
+  const count = Number(req.params.count);
+
+  if (isNaN(count) || count <= 0) {
+    return res
+      .status(400)
+      .json({ error: "Count must be a number greater than 0" });
+  }
+
+  try {
+    const games = await prisma.game.findMany({
+      orderBy: {
+        createdAt: "asc",
+      },
+      include: {
+        answers: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+    });
+
+    const leaderboard = [];
+
+    for (const game of games) {
+      if (gameIsOver(game.createdAt)) {
+        leaderboard.push({
+          roomCode: game.roomCode,
+          letter: game.letter,
+          topic: game.topic,
+          winner: getWinner(game.answers),
+        });
+      }
+    }
+
+    res.json(leaderboard.slice(0, count));
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({ error: "Could not get leaderboard" });
+  }
+});
 
 app.get("/games", async (req, res) => {
   try {
@@ -153,12 +188,6 @@ app.post("/answers", async (req, res) => {
       .json({ error: "Room code, username, and answer are required" });
   }
 
-  const cleanAnswer = normalizeAnswer(answer);
-
-  if (!cleanAnswer) {
-    return res.status(400).json({ error: "Answer is required" });
-  }
-
   try {
     const game = await prisma.game.findUnique({
       where: {
@@ -177,6 +206,13 @@ app.post("/answers", async (req, res) => {
       return res.status(404).json({ error: "Game not found" });
     }
 
+    const answerCheck = answerValidator(answer, game.letter);
+    const cleanAnswer = answerCheck.cleanAnswer;
+
+    if (!cleanAnswer) {
+      return res.status(400).json({ error: "Answer is required" });
+    }
+
     if (gameIsOver(game.createdAt)) {
       return res.status(400).json({
         error: "Game is over",
@@ -184,7 +220,7 @@ app.post("/answers", async (req, res) => {
       });
     }
 
-    if (!answerValidator(cleanAnswer, game.letter)) {
+    if (!answerCheck.isValid) {
       return res
         .status(400)
         .json({ error: `Answer must start with ${game.letter}` });

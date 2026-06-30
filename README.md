@@ -1,4 +1,4 @@
-# Scattergories API
+# Scattergories Game
 
 Express + Prisma + PostgreSQL API for Scattergories.
 
@@ -20,68 +20,96 @@ Update `DATABASE_URL` in `.env`:
 DATABASE_URL="postgresql://username:password@localhost:5432/scattergories?schema=public"
 ```
 
-Push the Prisma schema to the database:
+## Database Setup
+
+Create a PostgreSQL database named:
+
+```text
+scattergories
+```
+
+Option 1: restore the included dump with pgAdmin.
+
+```text
+data/dump.sql
+```
+
+In pgAdmin, create an empty database, right-click it, choose Restore, and select `data/dump.sql`.
+
+Option 2: push the Prisma schema:
 
 ```bash
 yarn db:push
 ```
 
-## Usage
-
-Start the API:
+## Start
 
 ```bash
 yarn dev
 ```
 
-The server runs at:
+The API runs at:
 
 ```text
 http://localhost:3000
 ```
 
-Routes:
+## How To Play
+
+Use Insomnia, or a frontend to send requests.
+
+1. Create a game:
 
 ```text
-GET /
-POST /games
-GET /games
-POST /answers
+POST http://localhost:3000/games
 ```
 
-Create a game:
+Body:
 
 ```json
-POST /games
 {
   "roomCode": "PLUM42"
 }
 ```
 
-Submit an answer:
+2. List games:
+
+```text
+GET http://localhost:3000/games
+```
+
+3. Submit an answer:
+
+```text
+POST http://localhost:3000/answers
+```
+
+Body:
 
 ```json
-POST /answers
 {
   "roomCode": "PLUM42",
-  "username": "sam",
+  "username": "user1",
   "answer": "Bear"
 }
 ```
 
-Expose the API with ngrok:
+The answer must start with the game's letter. Duplicate answers in the same room are rejected.
 
-```bash
-ngrok http 3000
-```
-
-Database dumps go in:
+4. View winners:
 
 ```text
-data/
+GET http://localhost:3000/games
 ```
 
-Use pgAdmin Backup/Restore to export or import the database dump.
+After 5 minutes, games show a winner with username, score, and accepted answers.
+
+You can also use:
+
+```text
+GET http://localhost:3000/leaderboard
+GET http://localhost:3000/leaderboard/5
+```
 
 ## AI Disclosure
 

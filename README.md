@@ -48,7 +48,7 @@ yarn db:push
 yarn dev
 ```
 
-The API runs at:
+The API runs locally at:
 
 ```text
 http://localhost:3000
